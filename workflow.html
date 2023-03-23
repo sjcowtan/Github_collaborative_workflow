@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.253">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Susannah Cowtan">
+<meta name="dcterms.date" content="2023-03-23">
+
+<title>Git collaborative workflow with ownership</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="workflow_files/libs/clipboard/clipboard.min.js"></script>
+<script src="workflow_files/libs/quarto-html/quarto.js"></script>
+<script src="workflow_files/libs/quarto-html/popper.min.js"></script>
+<script src="workflow_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="workflow_files/libs/quarto-html/anchor.min.js"></script>
+<link href="workflow_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="workflow_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="workflow_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="workflow_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="workflow_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-paradigm" id="toc-the-paradigm" class="nav-link active" data-scroll-target="#the-paradigm"><span class="toc-section-number">1</span>  The paradigm</a></li>
+  <li><a href="#the-workflow" id="toc-the-workflow" class="nav-link" data-scroll-target="#the-workflow"><span class="toc-section-number">2</span>  The workflow</a>
+  <ul class="collapse">
+  <li><a href="#cloning-the-repo" id="toc-cloning-the-repo" class="nav-link" data-scroll-target="#cloning-the-repo"><span class="toc-section-number">2.1</span>  Cloning the repo</a></li>
+  <li><a href="#create-and-work-in-a-new-branch" id="toc-create-and-work-in-a-new-branch" class="nav-link" data-scroll-target="#create-and-work-in-a-new-branch"><span class="toc-section-number">2.2</span>  Create and work in a new branch</a></li>
+  <li><a href="#adding-a-new-file-and-working-on-files" id="toc-adding-a-new-file-and-working-on-files" class="nav-link" data-scroll-target="#adding-a-new-file-and-working-on-files"><span class="toc-section-number">2.3</span>  Adding a new file and working on files</a></li>
+  </ul></li>
+  <li><a href="#checking-for-conflicts" id="toc-checking-for-conflicts" class="nav-link" data-scroll-target="#checking-for-conflicts"><span class="toc-section-number">3</span>  Checking for conflicts</a>
+  <ul class="collapse">
+  <li><a href="#commit-everything" id="toc-commit-everything" class="nav-link" data-scroll-target="#commit-everything"><span class="toc-section-number">3.1</span>  Commit everything</a></li>
+  <li><a href="#check-for-changes-to-main" id="toc-check-for-changes-to-main" class="nav-link" data-scroll-target="#check-for-changes-to-main"><span class="toc-section-number">3.2</span>  Check for changes to <code>main</code></a></li>
+  <li><a href="#check-for-conflicts-between-local-main-and-originmain" id="toc-check-for-conflicts-between-local-main-and-originmain" class="nav-link" data-scroll-target="#check-for-conflicts-between-local-main-and-originmain"><span class="toc-section-number">3.3</span>  Check for conflicts between local <code>main</code> and <code>origin/main</code></a></li>
+  <li><a href="#check-for-conflicts-between-your-working-branch-and-originmain" id="toc-check-for-conflicts-between-your-working-branch-and-originmain" class="nav-link" data-scroll-target="#check-for-conflicts-between-your-working-branch-and-originmain"><span class="toc-section-number">3.4</span>  Check for conflicts between your working branch and <code>origin/main</code></a></li>
+  <li><a href="#sec-commit-graphs" id="toc-sec-commit-graphs" class="nav-link" data-scroll-target="#sec-commit-graphs"><span class="toc-section-number">3.5</span>  Looking at branch structure</a></li>
+  </ul></li>
+  <li><a href="#sec-conflict-checks" id="toc-sec-conflict-checks" class="nav-link" data-scroll-target="#sec-conflict-checks"><span class="toc-section-number">4</span>  Interpreting <code>git diff</code> output</a>
+  <ul class="collapse">
+  <li><a href="#additions-but-no-deletions" id="toc-additions-but-no-deletions" class="nav-link" data-scroll-target="#additions-but-no-deletions"><span class="toc-section-number">4.1</span>  Additions but no deletions</a></li>
+  <li><a href="#both-additions-and-deletions" id="toc-both-additions-and-deletions" class="nav-link" data-scroll-target="#both-additions-and-deletions"><span class="toc-section-number">4.2</span>  Both additions and deletions</a></li>
+  <li><a href="#someone-has-made-a-branch-from-your-branch" id="toc-someone-has-made-a-branch-from-your-branch" class="nav-link" data-scroll-target="#someone-has-made-a-branch-from-your-branch"><span class="toc-section-number">4.3</span>  Someone has made a branch from your branch</a></li>
+  </ul></li>
+  <li><a href="#sec-conflict-res" id="toc-sec-conflict-res" class="nav-link" data-scroll-target="#sec-conflict-res"><span class="toc-section-number">5</span>  Resolving conflicts</a>
+  <ul class="collapse">
+  <li><a href="#additions-but-no-deletions-1" id="toc-additions-but-no-deletions-1" class="nav-link" data-scroll-target="#additions-but-no-deletions-1"><span class="toc-section-number">5.1</span>  Additions but no deletions</a></li>
+  <li><a href="#both-additions-and-deletions-1" id="toc-both-additions-and-deletions-1" class="nav-link" data-scroll-target="#both-additions-and-deletions-1"><span class="toc-section-number">5.2</span>  Both additions and deletions</a>
+  <ul class="collapse">
+  <li><a href="#cosmetic-changes" id="toc-cosmetic-changes" class="nav-link" data-scroll-target="#cosmetic-changes"><span class="toc-section-number">5.2.1</span>  Cosmetic changes</a></li>
+  <li><a href="#expected-changes" id="toc-expected-changes" class="nav-link" data-scroll-target="#expected-changes"><span class="toc-section-number">5.2.2</span>  Expected changes</a></li>
+  <li><a href="#unexpected-changes" id="toc-unexpected-changes" class="nav-link" data-scroll-target="#unexpected-changes"><span class="toc-section-number">5.2.3</span>  Unexpected changes</a></li>
+  </ul></li>
+  <li><a href="#sec-branch-from-branch" id="toc-sec-branch-from-branch" class="nav-link" data-scroll-target="#sec-branch-from-branch"><span class="toc-section-number">5.3</span>  Someone has made a branch from your branch</a></li>
+  </ul></li>
+  <li><a href="#sec-pull-requests" id="toc-sec-pull-requests" class="nav-link" data-scroll-target="#sec-pull-requests"><span class="toc-section-number">6</span>  Pull requests</a>
+  <ul class="collapse">
+  <li><a href="#opening-a-pull-request" id="toc-opening-a-pull-request" class="nav-link" data-scroll-target="#opening-a-pull-request"><span class="toc-section-number">6.1</span>  Opening a pull request</a></li>
+  <li><a href="#working-with-an-open-pull-request" id="toc-working-with-an-open-pull-request" class="nav-link" data-scroll-target="#working-with-an-open-pull-request"><span class="toc-section-number">6.2</span>  Working with an open pull request</a>
+  <ul class="collapse">
+  <li><a href="#the-conversation-tab" id="toc-the-conversation-tab" class="nav-link" data-scroll-target="#the-conversation-tab"><span class="toc-section-number">6.2.1</span>  The conversation tab</a></li>
+  <li><a href="#the-commits-tab" id="toc-the-commits-tab" class="nav-link" data-scroll-target="#the-commits-tab"><span class="toc-section-number">6.2.2</span>  The commits tab</a></li>
+  <li><a href="#the-files-changed-tab" id="toc-the-files-changed-tab" class="nav-link" data-scroll-target="#the-files-changed-tab"><span class="toc-section-number">6.2.3</span>  The files changed tab</a></li>
+  <li><a href="#the-checks-tab" id="toc-the-checks-tab" class="nav-link" data-scroll-target="#the-checks-tab"><span class="toc-section-number">6.2.4</span>  The checks tab</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#sec-ownership" id="toc-sec-ownership" class="nav-link" data-scroll-target="#sec-ownership"><span class="toc-section-number">7</span>  For repository owners</a>
+  <ul class="collapse">
+  <li><a href="#sec-branch-protection" id="toc-sec-branch-protection" class="nav-link" data-scroll-target="#sec-branch-protection"><span class="toc-section-number">7.1</span>  Setting branch protection rules</a></li>
+  <li><a href="#sec-merge-pull" id="toc-sec-merge-pull" class="nav-link" data-scroll-target="#sec-merge-pull"><span class="toc-section-number">7.2</span>  Merging an approved pull request</a></li>
+  <li><a href="#overriding-branch-protection-to-merge" id="toc-overriding-branch-protection-to-merge" class="nav-link" data-scroll-target="#overriding-branch-protection-to-merge"><span class="toc-section-number">7.3</span>  Overriding branch protection to merge</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Git collaborative workflow with ownership</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Susannah Cowtan </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">March 23, 2023</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+</header>
+
+<p>This workflow is designed for a small group of collaborators on a modestly sized project which has clear ownership. Other solutions are better for big projects and production conditions.</p>
+<p>Specifically, this workflow assumes that any one task will only be worked on by one person, though others may be consulted for advice and code review. The project owner gets final say when a task is complete and ready to be merged into the <code>main</code> branch.</p>
+<section id="the-paradigm" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> The paradigm</h1>
+<ul>
+<li><p>The “owner” of the code project creates the GitHub repo.</p></li>
+<li><p>Everyone clones the repo</p></li>
+<li><p>Work to be done is broken down into small, self-contained tasks. As far as possible, avoid having more than one person working on the same function at the same time - this will make merging easier</p></li>
+<li><p>To work on a code task, create a branch for that one task, and work on that</p></li>
+<li><p>Make it a habit to check that there haven’t been any changes made to the <code>main</code> branch on Github which contradict it</p></li>
+<li><p>If changing your code to fit with the new version of <code>main</code> is an easy decision, do that</p></li>
+<li><p>If it’s not obvious, create a pull request. Other collaborators can give advice, but the project owner should take the lead on the decisions. They may need to work with you to resolve conflicts</p></li>
+<li><p>When you’ve finished work on your task, check for conflicts and resolve them once more, then create a pull request for your branch to be merged into <code>main</code></p></li>
+</ul>
+</section>
+<section id="the-workflow" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> The workflow</h1>
+<section id="cloning-the-repo" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="cloning-the-repo"><span class="header-section-number">2.1</span> Cloning the repo</h2>
+<p>When you clone a repo, you can optionally change the name of the local directory to something more meaningful to you:</p>
+<p><code>git clone git@github.com:ownername/repo_name.git local_repo_name</code></p>
+<p>This example uses the <code>ssh</code> authentication syntax because I have found the <code>https</code> authentication to be less reliable. It doesn’t matter which you use.</p>
+</section>
+<section id="create-and-work-in-a-new-branch" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="create-and-work-in-a-new-branch"><span class="header-section-number">2.2</span> Create and work in a new branch</h2>
+<p>When you start work on a task, never do your work on the <code>main</code> branch. Instead create a task-specific branch with a meaningful name. The examples in this document are going to use branch names like <code>first</code> and <code>second</code>. These would usually be terrible names, but I am using them so that it is clear in which order to make commits to set up the examples I need, so in this one case they are in fact meaningful.</p>
+<p><code>git branch my_task_name</code></p>
+<p><code>git checkout my_task_name</code></p>
+<p>Push your branch to GitHub so other people know what’s being worked on</p>
+<p><code>git push origin my_task_name</code></p>
+</section>
+<section id="adding-a-new-file-and-working-on-files" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="adding-a-new-file-and-working-on-files"><span class="header-section-number">2.3</span> Adding a new file and working on files</h2>
+<p>If you create a new file, or you’ve changed more than one file and only want to commit the changes to one of them, add it:</p>
+<p><code>git add my_file</code></p>
+<p>Commit changes often, at least once a day, or when a phase of work is complete, if that’s sooner. Committing more often is fine - whenever you feel you’ve made progress. Commit one file using:</p>
+<p><code>git commit -m "Meaningful commit message" my_file</code></p>
+<p>Or, if you want to commit every file that you’ve made a change to, use:</p>
+<p><code>git commit -a -m "Meaningful commit message"</code></p>
+<p>If you don’t want to use <code>-m "message"</code>, git will open a text editor (on my machine that’s <code>vi</code>) and you can type your message in that. If you find yourself in <code>vi</code> and you’re not a <code>vi</code> user, don’t panic. Type <code>i</code> (for <code>insert</code>) before the text you want to type, and <code>ESCAPE :wq!</code> to save and exit. If you messed up, type <code>ESCAPE :q!</code> (the <code>w</code> means <code>write</code>, and the <code>q</code> <code>quit</code>).</p>
+<p>When you’re ready, push your branch to GitHub to back up your work and to let collaborators look at your progress. This can be after one commit or several. It’s a good idea to push every time you complete a subtask, but push at least every day you do reasonable amounts of work, since GitHub is also your backup service.</p>
+<p><code>git push origin my_task_name</code></p>
+</section>
+</section>
+<section id="checking-for-conflicts" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Checking for conflicts</h1>
+<p>While you’ve been working, someone else may have completed a code task and their code may have been merged into <code>main</code>. It’s a good idea to check for conflicts when:</p>
+<ul>
+<li><p>You notice this has happened, for example on the GitHub repo page or by taking a look at a commit graph (see <a href="#sec-commit-graphs">Section&nbsp;3.5</a>).</p></li>
+<li><p>You’ve been working on your code for a long time</p></li>
+<li><p>You’ve finished your task and want to create a pull request</p></li>
+</ul>
+<section id="commit-everything" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="commit-everything"><span class="header-section-number">3.1</span> Commit everything</h2>
+<p>Before you check for conflicts, always do a <code>git commit -a</code>. You don’t necessarily need to push, but making sure the last commits are pushed before you do a <code>merge</code> or <code>rebase</code> is good practice.</p>
+</section>
+<section id="check-for-changes-to-main" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="check-for-changes-to-main"><span class="header-section-number">3.2</span> Check for changes to <code>main</code></h2>
+<p>To make any comparisons with the version of <code>main</code> on GitHub, you first need to fetch a copy of it to your local repository. This won’t affect what you’re working on.</p>
+<p><code>git fetch origin main</code></p>
+<p>You can’t specify a comparison branch with <code>git status</code>, so you first need to checkout your local <code>main</code>:</p>
+<p><code>git checkout main</code></p>
+<p>When you do this, <code>git status</code> will automatically be run. You might see something like this, if changes have been made to <code>origin/main</code>.</p>
+<pre><code>On branch main
+Your branch is behind 'origin/main' by 3 commits, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+
+nothing to commit, working tree clean</code></pre>
+<p>Do not take its advice and use <code>git pull</code>. This is a combination of <code>git fetch</code> and <code>git merge</code>, and while you might indeed end up merging, a more considered decision is called for (see <a href="#sec-conflict-res">Section&nbsp;5</a>).</p>
+<p>You can run <code>git status</code> again at any point, but remember that it is working against your local fetched version of <code>origin/main</code>, so remember to update that too.</p>
+</section>
+<section id="check-for-conflicts-between-local-main-and-originmain" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="check-for-conflicts-between-local-main-and-originmain"><span class="header-section-number">3.3</span> Check for conflicts between local <code>main</code> and <code>origin/main</code></h2>
+<p>If you haven’t already done this, fetch a copy of main, that doesn’t overwrite your local copy:</p>
+<p><code>git fetch origin main</code></p>
+<p>Now compare your local version of <code>main</code>:</p>
+<p><code>git diff origin/main main</code></p>
+<p>If there are no differences, you will see nothing. If there are, it will look something like one of the examples in <a href="#sec-conflict-checks">Section&nbsp;4</a>.</p>
+<p><strong>Note:</strong> this has the same effect as <code>git diff origin/main..main</code>, if you are more familiar with that syntax. Both show the differences between the most recent commits on <code>origin/main</code> and <code>main</code>. If you want to see all the changes to the <code>origin/main</code> branch since your <code>main</code> was started, you can use <code>git diff origin/main...main</code>.</p>
+</section>
+<section id="check-for-conflicts-between-your-working-branch-and-originmain" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="check-for-conflicts-between-your-working-branch-and-originmain"><span class="header-section-number">3.4</span> Check for conflicts between your working branch and <code>origin/main</code></h2>
+<p>If you haven’t already done this, fetch a copy of main, that doesn’t overwrite your local copy:</p>
+<p><code>git fetch origin main</code></p>
+<p>Display the changes which would be made to the version in origin/main if you overwrote it with the version in my_task_name</p>
+<p><code>git diff origin/main my_task_name</code></p>
+<p><strong>Warning!</strong> If you do this <em>without</em> having done a <code>git fetch</code>, it will only show the differences between <code>my_branch_name</code> and the version of <code>main</code> in your local repo</p>
+<p>Look at the conflicts for each file. <a href="#sec-conflict-checks">Section&nbsp;4</a> explains the output.</p>
+</section>
+<section id="sec-commit-graphs" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="sec-commit-graphs"><span class="header-section-number">3.5</span> Looking at branch structure</h2>
+<p>A commit graph is a nice way to get an overview of how the branches on your repo interact. This can show you whether you are working with the current version of <code>main</code> (but always back this up with a <code>git diff</code> for rigour). It can also show you whether somebody has made a branch from your branch. This is important because their branch could be affected by how you choose to update the version of <code>main</code> you are working on in your branch. There are a few different ways to look at these.</p>
+<p>GitHub has a rudimentary network graph - select the repository’s <code>Insights</code> tab, and then <code>Network</code> in the menu on the left, to see something like:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/github-network-old-main.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Github’s network graph</figcaption><p></p>
+</figure>
+</div>
+<p>Sadly zooming in doesn’t make this any more readable.</p>
+<p>If you use VSCode as your coding API, there are a couple of extensions that produce rather nicer graphs. Firstly GitLens, which is a pretty powerful git interface, has an option in the command panel <code>GitLens+: Show commit graph</code>. The background does not have to be purple!</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/git-lens-old-main.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">GitLens commit graph</figcaption><p></p>
+</figure>
+</div>
+<p>And my personal favourite for readability, Git Graph, accessed via a little button on the bottom left of your VSCode workspace:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/git-graph-old-main.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Git Graph commit graph</figcaption><p></p>
+</figure>
+</div>
+<p>I am not currently aware of an equivalent for RStudio.</p>
+</section>
+</section>
+<section id="sec-conflict-checks" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Interpreting <code>git diff</code> output</h1>
+<section id="additions-but-no-deletions" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="additions-but-no-deletions"><span class="header-section-number">4.1</span> Additions but no deletions</h2>
+<p>The output will look something like this, if a file named <code>my_file</code> has the only changes:</p>
+<pre><code>diff --git a/my_file b/my_file
+index 02d5941..e0955ee 100644
+--- a/my_file
++++ b/my_file
+@@ -1,3 +1,4 @@
+ This is a test file for demonstrating a GitHub workflow.
+ It is very boring indeed.
++I'm making a change to it from the first branch in a_repo.</code></pre>
+<p>Here I have added one line (prefixed by <code>+</code>) to the unchanged lines (no prefix).</p>
+</section>
+<section id="both-additions-and-deletions" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="both-additions-and-deletions"><span class="header-section-number">4.2</span> Both additions and deletions</h2>
+<p>In this example I have made a pull request and the change from the <code>first</code> branch has been merged into <code>origin/main</code>. The <code>second</code> branch was branched from their local <code>main</code> before this merge was made, so the new line added on branch <code>second</code> would overwrite the change made via branch <code>first</code> and the merge. The output would look the same if on the second branch I had been using the current version of <code>main</code>, but deleted that line and replaced it with the new one.</p>
+<pre><code>diff --git a/my_file b/my_file
+index d5949ad..8f0b080 100644
+--- a/my_file
++++ b/my_file
+@@ -1,4 +1,4 @@
+ This is a test file for demonstrating a GitHub workflow.
+ It is very boring indeed.
+-I made a change to it from the first branch in a_repo.
++I'm making a change to it from the second branch, in b_repo</code></pre>
+<p><code>a/test1</code> refers to the version from the first branch specified in the <code>git diff</code> command, i.e.&nbsp;<code>origin/main</code>, and <code>b/test1</code> is the local version.</p>
+<p>There is 1 line which would be deleted from version <code>a</code>, and 1 line would be added from version <code>b</code> (<code>@@ -1 +1 @@</code>)</p>
+<p>The line which would be removed is prefixed with <code>-</code>, and the line to be added is prefixed <code>+</code>.</p>
+<p>The commit messages from the new commits on <code>origin/main</code> might help to explain the differences. You van view them using:</p>
+<p><code>git log --oneline main..origin/main</code></p>
+<p>Note that <code>git log --oneline my_branch..origin/main</code> appears to do the exact same thing, only comparing local <code>main</code> with the fetched version of <code>origin/main</code>.</p>
+</section>
+<section id="someone-has-made-a-branch-from-your-branch" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="someone-has-made-a-branch-from-your-branch"><span class="header-section-number">4.3</span> Someone has made a branch from your branch</h2>
+<p>This is a potential source of problems for them, since you may have made conflicting changes since their branch was created. Viewing a network graph of the full commit history (<a href="#sec-commit-graphs">Section&nbsp;3.5</a>) is a good way to check for this.</p>
+</section>
+</section>
+<section id="sec-conflict-res" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Resolving conflicts</h1>
+<p>Taking each of the cases in <a href="#sec-conflict-checks">Section&nbsp;4</a> in turn:</p>
+<section id="additions-but-no-deletions-1" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="additions-but-no-deletions-1"><span class="header-section-number">5.1</span> Additions but no deletions</h2>
+<p>Assuming you’ve tested your code properly under a full range of use cases (you <em>are</em> writing and running unit tests, right?) this should present no problems.</p>
+<ul>
+<li><p>If this is just an interim check, carry on working</p></li>
+<li><p>If you have completed the work on your branch, generate a pull request (see <a href="#sec-pull-requests">Section&nbsp;6</a>)</p></li>
+</ul>
+</section>
+<section id="both-additions-and-deletions-1" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="both-additions-and-deletions-1"><span class="header-section-number">5.2</span> Both additions and deletions</h2>
+<p>There are (at least) three possible situations here:</p>
+<ul>
+<li><p>The differences are cosmetic - you’ve changed the wording of some messages, or changed some code to make a graph prettier, without changing what it shows - and all the unit tests pass</p></li>
+<li><p>The differences change the functionality of the code in expected ways - your bugfix involved rewriting some lines of code, but nobody else has worked on that piece of the code to change its functionality in any way, i.e.&nbsp;your <code>main</code> is consistent with <code>origin/main</code> in that part of the code and anything it affects. Don’t forget to check the unit tests too!</p></li>
+<li><p>The differences change the functionality in unexpected ways - someone else has been working on the same bit of code or something up/downstream from it in a way that means your change will break theirs, whether that’s the main functionality or unit tests</p></li>
+</ul>
+<section id="cosmetic-changes" class="level3" data-number="5.2.1">
+<h3 data-number="5.2.1" class="anchored" data-anchor-id="cosmetic-changes"><span class="header-section-number">5.2.1</span> Cosmetic changes</h3>
+<p>Open a pull request (<a href="#sec-pull-requests">Section&nbsp;6</a>) so that your collaborators, (at minimum the project owner), can approve the changes or give you feedback</p>
+</section>
+<section id="expected-changes" class="level3" data-number="5.2.2">
+<h3 data-number="5.2.2" class="anchored" data-anchor-id="expected-changes"><span class="header-section-number">5.2.2</span> Expected changes</h3>
+<section id="your-local-main-matches-originmain" class="level4" data-number="5.2.2.1">
+<h4 data-number="5.2.2.1" class="anchored" data-anchor-id="your-local-main-matches-originmain"><span class="header-section-number">5.2.2.1</span> Your local <code>main</code> matches <code>origin/main</code></h4>
+<p>The easy case! Open a pull request (<a href="#sec-pull-requests">Section&nbsp;6</a>) so that your collaborators, (at minimum the project owner), can approve the changes or give you feedback.</p>
+</section>
+<section id="your-local-main-is-behind-originmain" class="level4" data-number="5.2.2.2">
+<h4 data-number="5.2.2.2" class="anchored" data-anchor-id="your-local-main-is-behind-originmain"><span class="header-section-number">5.2.2.2</span> Your local <code>main</code> is behind <code>origin/main</code></h4>
+<p>Before you can open a pull request for your changes, you first need to integrate it with the changes to origin/main. Since there are no expected problematic conflicts, that should be relatively easy.</p>
+</section>
+</section>
+<section id="unexpected-changes" class="level3" data-number="5.2.3">
+<h3 data-number="5.2.3" class="anchored" data-anchor-id="unexpected-changes"><span class="header-section-number">5.2.3</span> Unexpected changes</h3>
+<p>Your local <code>main</code> is behind <code>origin/main</code> and someone else has made changes which would be broken or overwritten by your code.</p>
+</section>
+</section>
+<section id="sec-branch-from-branch" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="sec-branch-from-branch"><span class="header-section-number">5.3</span> Someone has made a branch from your branch</h2>
+<p>They will be able to fix their code as long as:</p>
+<ul>
+<li><p>The code is integrated into <code>main</code> using <code>git merge</code> and not <code>git rebase</code></p></li>
+<li><p>The merge is performed on GitHub, so that the pointers from their branch are updated to point to <code>main</code></p></li>
+</ul>
+<p>The first point about using <code>merge</code> not <code>rebase</code> is because when code is rebased onto a new version of <code>main</code>, it rewrites the commit history. New commits with new identifiers are appended to the history of the <code>main</code> branch. Several commits can even be combined into one. This helps to keep a repo with a lot of commits tidy, but if another branch shares part of your branch’s history, it will lose those reference points. Doing a <code>git merge</code>, by contrast, appends <code>merge commits</code> to the history of <code>main</code>, and these contain the same commits with the same identifiers that were present in the original branch.</p>
+</section>
+</section>
+<section id="sec-pull-requests" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Pull requests</h1>
+<p>There are two reasons to generate pull requests for your branch</p>
+<ul>
+<li><p>You’ve finished your work, checked for and resolved conflicts, and believe it to be ready to be merged into the <code>main</code> branch</p></li>
+<li><p>You’ve hit a problem, or have to choose between alternative solutions, and you would welcome your collaborators’ input</p></li>
+</ul>
+<section id="opening-a-pull-request" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="opening-a-pull-request"><span class="header-section-number">6.1</span> Opening a pull request</h2>
+<p>When you first created your branch, assuming you did so on the command line, it gave you the URL to create a pull request, for example</p>
+<p><code>https://github.com/sjcowtan/git-workflow-test/pull/new/first</code></p>
+<p>This will get you to the page for a new pull request to merge your branch with <code>main</code>.</p>
+<p>If you don’t use this URL, you can still get there, but it takes a little more work. Go to the main GitHub page for the repo, and select the <code>Pull requests</code> tab. You will see something like:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/pull-request-start.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Go to pull request page</figcaption><p></p>
+</figure>
+</div>
+<p>If previous pull requests have been created on your repo, they will appear in the box instead of “Welcome to pull requests!”</p>
+<p>Click the green <code>New pull request</code> button. This will open a new page:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/pull-request-pick-branch.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Choose branch for pull request</figcaption><p></p>
+</figure>
+</div>
+<p>There are two buttons with pulldowns, one called <code>base</code> and one <code>compare</code>. Use the <code>compare</code> menu to select your branch.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/pull-request-branch-create.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Initiate pull request for branch</figcaption><p></p>
+</figure>
+</div>
+<p>The box at the bottom of this page gives you another chance to review the output from <code>git diff</code>.</p>
+<p>There is a green tick and “Able to merge” next to the branch buttons now. <strong>Don’t click it!</strong>. If there are no protections in place on the repository, as there are not for this example, this would directly perform the merge, whereas you need to check with our collaborators. Use the green <code>Create pull request</code> button instead.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/pull-request.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Add title and description to pull request</figcaption><p></p>
+</figure>
+</div>
+<p>You are now at the page that the above URL would have taken you to! But if you had done that, you would have lost the chance to verify that the <code>git diff</code> output was still as you expected.</p>
+<p>Put a short meaningful description of the changes or input required in the title section, and some more detail in the large box. If you have particular issues which you would like input on, this is the place to detail them.</p>
+<p>Now click the <code>Create pull request</code> button.</p>
+<div id="fig-open-pull-request" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figures/pull-request-open.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;1: Open pull request</figcaption><p></p>
+</figure>
+</div>
+<p>This is the page for you and your collaborators to work on this pull request. On the right hand side, there are a number of settings. If you want particular people to review your code, you can add them in the <code>Reviewers</code> section. Likewise you can use <code>Assignees</code> to indicate who is supposed to work on any issues raised (this can of course be you). Some of the <code>Labels</code> options can be useful as shortcuts to show why you’re asking for a review or what kind of changes you made; <code>bug</code>, <code>documentation</code>, <code>enhancement</code>, <code>help wanted</code> and <code>question</code>. If someone has opened an <code>issue</code> on the project and your code is designed to address it, this can be indicated in <code>Development</code>.</p>
+<p>The green box indicates that there are branch protection rules which could have been added to this repository, but in this case were not, since they would have little effect on a test repository with only one contributer. They will be discussed further in <a href="#sec-ownership">Section&nbsp;7</a>.</p>
+<p>If the branch protections suggested in <a href="#sec-branch-protection">Section&nbsp;7.1</a> have been implemented, you will instead see:</p>
+<div id="fig-pull-request-branch-protection" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figures/pull-request-branch-protection.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;2: Status box on open pull request</figcaption><p></p>
+</figure>
+</div>
+<p>This enforces the need for a code review before merging a branch into <code>main</code>. I am the owner of this repository so I can override this, as could any designated administrators.</p>
+<p><strong>Note:</strong> There is a command <code>git request-pull</code> which sounds as though it would do the job. It doesn’t! This is designed for a mailing-list based workflow, and sends the list a summary of the pending changes.</p>
+</section>
+<section id="working-with-an-open-pull-request" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="working-with-an-open-pull-request"><span class="header-section-number">6.2</span> Working with an open pull request</h2>
+<section id="the-conversation-tab" class="level3" data-number="6.2.1">
+<h3 data-number="6.2.1" class="anchored" data-anchor-id="the-conversation-tab"><span class="header-section-number">6.2.1</span> The conversation tab</h3>
+<p>At the bottom of the page for a pull request, there is a box to leave comments (not shown in <a href="#fig-open-pull-request">Figure&nbsp;1</a>). You can also drag whole files into it. This is the way for reviewers and the assignee / pull requestor to exchange ideas and suggestions. Here I’ve made a suggestion:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/pull-request-wording-change.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Comment on pull request</figcaption><p></p>
+</figure>
+</div>
+<p>Note that I also assigned myself to respond to issues. I now make that change on my branch and push it to GitHub, and the pull request page now looks like:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/pull-request-made-change.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Change made to branch with open pull request</figcaption><p></p>
+</figure>
+</div>
+</section>
+<section id="the-commits-tab" class="level3" data-number="6.2.2">
+<h3 data-number="6.2.2" class="anchored" data-anchor-id="the-commits-tab"><span class="header-section-number">6.2.2</span> The commits tab</h3>
+<section id="viewing-commits" class="level4" data-number="6.2.2.1">
+<h4 data-number="6.2.2.1" class="anchored" data-anchor-id="viewing-commits"><span class="header-section-number">6.2.2.1</span> Viewing commits</h4>
+<p>To look at the commits associated with an open pull request, select the <code>Commits</code> tab.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/pull-request-commits-tab.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Commits on pull request branch</figcaption><p></p>
+</figure>
+</div>
+<p>To look at a particular commit, click the blue commit ID:</p>
+<div id="fig-pull-request-view-commit" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="figures/pull-request-view-commit.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;3: Viewing a particular commit</figcaption><p></p>
+</figure>
+</div>
+<p>The changes are clearly highlighted between the two versions.</p>
+</section>
+<section id="reviewing-code" class="level4" data-number="6.2.2.2">
+<h4 data-number="6.2.2.2" class="anchored" data-anchor-id="reviewing-code"><span class="header-section-number">6.2.2.2</span> Reviewing code</h4>
+<p>As a code reviewer, you click on the green <code>Review changes</code> button on <a href="#fig-pull-request-view-commit">Figure&nbsp;3</a> and a box opens to add your comments:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/pull-request-review-changes.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Reviewing a commit</figcaption><p></p>
+</figure>
+</div>
+<p>If you believe that the code is ready to be merged with the main branch and you are the owner or acting as the owner of the repository, you can select the <code>Approve</code> button when you make your feedback (but note that you can’t <code>Approve</code> your own pull request). Otherwise, you can indicate your approval with a <code>Comment</code>. These messages will also be visible in the <code>Conversations</code> tab.</p>
+<p>If you think further work is essential, or the change needs to be scrapped, use <code>Request changes</code> (also not something you can do to your own pull request). It will not be possible to merge the code until you have agreed that these have been addressed.</p>
+<p>If you have some useful input but do not think it is important enough to affect whether the code can be merged, use <code>Comment</code>.</p>
+<p>In all cases, use the <code>Submit review</code> button when you’re done.</p>
+</section>
+<section id="overriding-the-need-to-approve" class="level4" data-number="6.2.2.3">
+<h4 data-number="6.2.2.3" class="anchored" data-anchor-id="overriding-the-need-to-approve"><span class="header-section-number">6.2.2.3</span> Overriding the need to approve</h4>
+<p>To prevent single points of failure, the owner or administrators of a repository can merge a request which has an outstanding request for changes, or one which has not been approved in review. More details on special cases are detailed in the tips box at the bottom of <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews">this GitHub documentation page</a>.</p>
+</section>
+<section id="closing-a-pull-request-without-merging" class="level4" data-number="6.2.2.4">
+<h4 data-number="6.2.2.4" class="anchored" data-anchor-id="closing-a-pull-request-without-merging"><span class="header-section-number">6.2.2.4</span> Closing a pull request without merging</h4>
+<p>Below the comment box on the <code>Conversation</code> tab, there is a button which reads <code>Close pull request</code> if you have not entered a comment, and <code>Close with comment</code> if you have. This will cancel the pull request.</p>
+</section>
+<section id="merging-an-approved-pull-request" class="level4" data-number="6.2.2.5">
+<h4 data-number="6.2.2.5" class="anchored" data-anchor-id="merging-an-approved-pull-request"><span class="header-section-number">6.2.2.5</span> Merging an approved pull request</h4>
+<p>Once you have addressed all of the issues raised in conversation or formally flagged as requiring review on your pull request, and somebody has approved the final version, the repository owner should merge your branch (<a href="#sec-merge-pull">Section&nbsp;7.2</a>). At this stage you can pull the new version of <code>main</code></p>
+<p><code>git checkout main</code></p>
+<p><code>git pull origin main</code></p>
+<p>and then delete your local branch:</p>
+<p><code>git branch -d my-task-name</code></p>
+<p>This will give you a warning if it hasn’t actually been merged.</p>
+<p>If the repository owner hasn’t deleted your branch from GitHub, you can do it with</p>
+<p><code>git push origin :my-task-name</code></p>
+<p>This helps to keep both your local repository and the central one clean. Your commit history is not lost because it is now part of the history of the <code>main</code> branch.</p>
+</section>
+</section>
+<section id="the-files-changed-tab" class="level3" data-number="6.2.3">
+<h3 data-number="6.2.3" class="anchored" data-anchor-id="the-files-changed-tab"><span class="header-section-number">6.2.3</span> The files changed tab</h3>
+<p>This shows the number of commits and the differences between the most recently committed version of the branch code and the version in <code>main</code>. You can review changes from here, in the same way as for the <code>Commits</code> tab.</p>
+</section>
+<section id="the-checks-tab" class="level3" data-number="6.2.4">
+<h3 data-number="6.2.4" class="anchored" data-anchor-id="the-checks-tab"><span class="header-section-number">6.2.4</span> The checks tab</h3>
+<p>This is only used if you have enabled automated workflows such as code linting via GitHub actions.</p>
+</section>
+</section>
+</section>
+<section id="sec-ownership" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> For repository owners</h1>
+<section id="sec-branch-protection" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="sec-branch-protection"><span class="header-section-number">7.1</span> Setting branch protection rules</h2>
+<p>To back up the workflow, you may wish to set branch protections on the <code>main</code> branch. Select <code>Settings/Branches</code> or use the <code>Add rule</code> button on the pull request view (<a href="#fig-open-pull-request">Figure&nbsp;1</a>). Suggested settings are:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/branch-protection.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Recommended branch protection rule settings</figcaption><p></p>
+</figure>
+</div>
+<p>There are several more options below these but none are selected.</p>
+</section>
+<section id="sec-merge-pull" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="sec-merge-pull"><span class="header-section-number">7.2</span> Merging an approved pull request</h2>
+<p>Once all the conversations about a pull request have been resolved and it has been approved, you can finally click that big green <code>merge pull request</code> button (<a href="#fig-open-pull-request">Figure&nbsp;1</a>).</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/pull-request-merged.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Completed merge</figcaption><p></p>
+</figure>
+</div>
+<p>It then makes sense to delete the merged branch on the repository using the <code>Delete branch</code> button, to keep the repo tidy. The branch owner will have to delete their local copy themselves.</p>
+</section>
+<section id="overriding-branch-protection-to-merge" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="overriding-branch-protection-to-merge"><span class="header-section-number">7.3</span> Overriding branch protection to merge</h2>
+<p>Sometimes the person who raised an issue about some code isn’t available to confirm it’s been solved. There may also be nobody available to do a code review for you. As the owner of the repository, you can override by checking the <code>Merge without waiting for requirements</code> checkbox in <a href="#fig-pull-request-branch-protection">Figure&nbsp;2</a>. It will then ask you to confirm the merge.</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
